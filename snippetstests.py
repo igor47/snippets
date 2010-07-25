@@ -16,3 +16,16 @@ class TestHighlights(unittest.TestCase):
 		"""Consecutive highlighted words should be grouped in one highlight"""
 		pass
 
+	def testNoMatches(self):
+		"""Nothing should be highlighted if the document has no matching groups"""
+		pass
+
+class TestExtraction(unittest.testCase):
+	"""Tests the ability to exract minimally relevant snippets"""
+	def testBasicRelevance(unittest.testCase):
+		"""Snippets should be more relevant than non-snippets"""
+		pass
+
+	def testSnippetSize(unittest.testCase):
+		"""Snippets should be of a certain size and not any longer"""
+		pass
