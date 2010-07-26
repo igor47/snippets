@@ -139,6 +139,8 @@ class Snipper(object):
 
 		for queryWord in queryWords:
 			if queryWord in words.words:
+				baseWords.append(queryWord)
+
 				for suffix in suffixes:
 					if queryWord.endswith(suffix):
 						baseWord = queryWord[0:queryWord.rfind(suffix)]
@@ -146,7 +148,8 @@ class Snipper(object):
 							baseWords.append(baseWord)
 
 			#always keep the query word	
-			finalWords.append(queryWord)
+			else:
+				finalWords.append(queryWord)
 
 		for baseWord in baseWords:
 			for suffix in suffixes:
