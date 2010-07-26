@@ -40,7 +40,7 @@ class Snipper(object):
 		The result is a list of dictionaries, one dictionary per word, containing the word's
 		'fullword', 'word', 'score' and 'clauseEnder' boolean"""
 
-		wordRe = re.compile(r"[^\s]+\s+")	#this is how we split out words
+		wordRe = re.compile(r"""([a-z0-9'`"]+)([^a-z0-9'`"]+)""", re.IGNORECASE)	#this is how we split out words
 		clauseIndicators = (',', ';')
 
 		words = []
@@ -48,14 +48,15 @@ class Snipper(object):
 
 		for word in wordRe.finditer(self.doc):
 			wordInfo = {
-					'fullword':word.group(),
-					'word':word.group().strip(),
+					'fullword':word.group(0),
+					'word':word.group(1),
+					'trail':word.group(2),
 					'clauseEnder':False,
 					}
 
 			#determine if this ends a clause -- useful for building the snippet
 			for indicator in clauseIndicators:
-				if wordInfo['word'].endswith(indicator):
+				if wordInfo['trail'].startswith(indicator):
 					wordInfo['clauseEnder'] = True
 
 			#determine the score for this word
