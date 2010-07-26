@@ -23,21 +23,35 @@ class Snipper(object):
 		self.doc = doc
 		self.query = query
 
-		self.words = []
 		self.bestWordIndex = None
 
 	@property
 	def bestSnippet(self):
 		"""Returns the best snippet"""
-		self.buildQueryWordList()
-		self.buildWordScores()
-		return self.findBestSnippet()
+		queryWords = self.buildQueryWordList(self.query)
+		documentWords, bestWordIndex = self.buildWordScores(self.document, queryWords)
+		bestSnippetWords = self.findBestSnippetWords(documentWords, bestWordIndex)
 
-	def buildWordScores(self):
+		return "".join([word['fullword'] for word in bestSnippetWords]).strip()
+
+	@property
+	def bestSnippetHighlighted(self):
+		"""Returns the best snippet with the matches highlighted"""
+		queryWords = self.buildQueryWordList(self.query)
+		documentWords, bestWordIndex = self.buildWordScores(self.document, queryWords)
+		bestSnippetWords = self.findBestSnippetWords(documentWords, bestWordIndex)
+
+		return self.highlightSnippet(bestSnippetWords)
+
+	def buildWordScores(self, document, queryWords):
 		"""Parses out the words in the document and scores them
+		args:
+			doc -- the document from which words are extracted
+			queryWords -- a list of words which are scored highly
 
-		The result is a list of dictionaries, one dictionary per word, containing the word's
-		'fullword', 'word', 'score' and 'clauseEnder' boolean"""
+		The result is a list of dictionaries, one dictionary per word,
+		containing the word, it's full expression, it's trail, score and
+		booleans for whether it is a clause ender or matches a query word"""
 
 		wordRe = re.compile(r"""([a-z0-9'`"]+)([^a-z0-9'`"]+)""", re.IGNORECASE)	#this is how we split out words
 		clauseIndicators = ('.', ';')
@@ -45,11 +59,13 @@ class Snipper(object):
 		words = []
 		bestWordIndex = 0
 
-		for word in wordRe.finditer(self.doc):
+		for word in wordRe.finditer(document):
 			wordInfo = {
 					'fullword':word.group(0),
 					'word':word.group(1),
 					'trail':word.group(2),
+					'matching':False,
+					'score':-1,		#non-matching words decay score by 1
 					'clauseEnder':False,
 					}
 
@@ -59,48 +75,44 @@ class Snipper(object):
 					wordInfo['clauseEnder'] = True
 
 			#determine the score for this word
-			wordInfo['score'] = -1	#non-matching words decay store by 1
-			for queryWord in self.queryWords:
+			for queryWord in queryWords:
 				if queryWord == wordInfo['word']:
-					#Matching words jump the score by the snippet size
-					#This allows us to keep track of density in the snippet
+					wordInfo['matching'] = True
+					#matching words jump score by the snippet size
 					wordInfo['score'] = self.snippetMaxWords
 
 			#combine with preceeding word to form score so far
-			#score never drops below 0
 			if len(words) > 0:
 				wordInfo['score'] = max(wordInfo['score'] + words[-1]['score'], 0)
 			else:
-				wordInfo['score'] = 2		#give some weight to the first word
+				wordInfo['score'] = 1		#give some weight to the start of document
 
-			#we want to eliminate the influence of words which don't make it into this window
+			#we want to eliminate the influence of words which don't even make it into this window
 			currentIndex = len(words)
 			lastOutOfWindow = currentIndex - self.snippetMaxWords
-			if lastOutOfWindow > 0:
+			if lastOutOfWindow >= 0:
 				wordInfo['score'] = max(wordInfo['score'] - words[lastOutOfWindow]['score'], 0)
 
 			words.append(wordInfo)
 
 			#are we now the bestest word?
 			if wordInfo['score'] > words[bestWordIndex]['score']:
-				lastBest = bestWordIndex
 				bestWordIndex = currentIndex
 
-		#save the results
-		self.words = words
-		self.bestWordIndex = bestWordIndex
+		#and vioala!
+		return words, bestWordIndex
 
-	def findBestSnippet(self):
+	def findBestSnippetWords(self, words, bestWordIndex):
 		"""Build a snippet around the word with the best score"""
 		#figure out where the snippet starts
-		if self.bestWordIndex > self.snippetMaxWords:
-			minFirstIndex = self.bestWordIndex - self.snippetMaxWords + 1
+		if bestWordIndex > self.snippetMaxWords:
+			minFirstIndex = bestWordIndex - self.snippetMaxWords + 1
 
 			#we might be able to  sacrifice some words from the front of the string
 			#To get a clause start at the front and back
 			for cutFromFront in xrange(self.snippetMaxWords):
-				prevWord = self.words[minFirstIndex + cutFromFront - 1]
-				curWord = self.words[minFirstIndex + cutFromFront]
+				prevWord = words[minFirstIndex + cutFromFront - 1]
+				curWord = words[minFirstIndex + cutFromFront]
 
 				#normally, the score decays by one each word. If the next word has a bigger
 				#score than the previous word, it's a matching word and cannot be cut
@@ -116,22 +128,22 @@ class Snipper(object):
 			firstIndex = minFirstIndex + cutFromFront + 1	#off by one fixer
 		else:
 			firstIndex = 0		#we start at the beginning of the document
-			cutFromFront = self.snippetMaxWords - self.bestWordIndex
+			cutFromFront = self.snippetMaxWords - bestWordIndex
 
 		#if we have space in our clause, we might could try to find the end of the clause
-		lastIndex = self.bestWordIndex + 1
+		lastIndex = bestWordIndex + 1
 		if cutFromFront > 0:
 			for addToEnd in xrange(1, cutFromFront):
-				curWord = self.words[self.bestWordIndex + addToEnd]
+				curWord = words[bestWordIndex + addToEnd]
 				if curWord['clauseEnder']:
 					break
 
 			lastIndex += addToEnd
 
 		#and now, for the grande finale
-		return "".join([word['fullword'] for word in self.words[firstIndex:lastIndex]]).strip()
+		return words[firstIndex:lastIndex]
 
-	def buildQueryWordList(self):
+	def buildQueryWordList(self, query):
 		"""Builds a list of matching words from the query string
 
 		we use a basic stemming algorithm which isn't very sophisicated
@@ -139,7 +151,7 @@ class Snipper(object):
 		import words
 
 		suffixes = ['s', 'ing', 'est', 'ed', 'er', 'dom', 'like', 'ish', 'ly', 'ness', 'y', 'ism']
-		queryWords = self.query.split()
+		queryWords = query.split()
 		baseWords = []
 		finalWords = []
 
@@ -166,21 +178,41 @@ class Snipper(object):
 			#always keep the base word
 			finalWords.append(baseWord)
 
-
 		#we may have gotten dupes when we saved the queryWord AND a finalWord
 		finalWords = list(set(finalWords))
-		self.queryWords = finalWords
+		return finalWords
 
-def highlightWords(doc, words):
-	"""Highlights words in a document
-	Args:
-		doc -- a string in which to highlight the words
-		words -- a string containing the words to highlight
+	def highlightSnippet(self, snippetWords):
+		"""Highlights words in a document
+		Args:
+			snippetWords -- a list of words which comprise the snippet (from buildWordScores)
+		returns
+			A string with the matching words from the query highlighted"""
 
-	returns
-		A string with the specified words highlighted"""
+		highlightedSnippet = ""
+		alreadyHighlighting = False
 
-	return doc
+		for index in xrange(len(snippetWords)):
+			snippetWord = snippetWords[index]
+			if snippetWord['matching'] and not alreadyHighlighting:
+				highlightedSnippet += "[[HIGHLIGHT]]"
+				alreadyHighlighting = True
+
+			highlightedSnippet += snippetWord['word']
+
+			if alreadyHighlighting:
+				try:
+					nextWord = snippetWords[index + 1]
+				except IndexError:
+					nextWord = None
+
+				if not nextWord or not nextWord['matching']:
+					highlightedSnippet += "[[ENDHIGHLIGHT]]"
+					alreadyHighlighting = False
+
+			highlightedSnippet += snippetWord['trail']
+
+		return highlightedSnippet.strip()
 
 def highlightDoc(doc, query):
 	"""Highlights snippets in a document
@@ -192,5 +224,4 @@ def highlightDoc(doc, query):
 		The most relevant snippets from the document with the search terms highlighted."""
 
 	snipper = Snipper(doc, query)
-	return highlightWords(snipper.bestSnippet, query)
-
+	return snipper.bestSnippetHighlighted()
