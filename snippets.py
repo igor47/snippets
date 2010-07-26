@@ -18,25 +18,66 @@ def highlightDoc(doc, query):
 
 class Snipper(object):
 	"""An object that extracts and highlights snippets in documents
-	This is organized as an object so that individual sections can be more easily replace"""
-	snippetSize = 3		#in sentences
+	This is organized as an object so that individual sections can be more easily replace
+	This assumes that documents will be real english prose text -- it will not do well with
+	extensive math or strange characters"""
+
+	snippetClauses = 3
+	snippetMaxWords = 60
+	snippetMinWords = 30
+
 	def __init__(self, doc, query):
 		self.doc = doc
 		self.query = query
 
 		self.queryWords = self.query.split()
-	
-	def findSnippets(self):
-		#this is a state machine
-		#we slide along the document, keeping a window of at most snippetSize
-		#we slide one sentence at a time
-		#for every window, we evaluate it's relevance and 
 
-	def sentenceIterator(self):
-		"""This iterator yields sentences from the document, one at a time"""
-		pass
+	def buildWordScores(self):
+		"""Parses out the words in the document and scores them
 
-	def sentenceWeight(self):
+		the self.words list will contain a list of dictionaries containing a word, it's score, and
+		whether the word is a clause ender"""
+
+		wordRe = re.compile(r"[^\s]+\s+")	#this is how we split out words
+		clauseIndicators = (',', ';')
+
+		words = []
+		maxWordIndex = 0
+
+		for word in wordRe.finditer(self.doc):
+			wordInfo = {
+					'fullword':word,
+					'word':word.strip(),
+					'clauseEnd:False,
+					'score':-1,
+					}
+
+			#determine if this ends a clause -- useful for building the snippet
+			for indicator in clauseIndicators:
+				if wordInfo['word'].endswith(indicator):
+					wordInfo['clauseEnd'] = True
+
+			#determine the score for this word
+			for queryWord in self.queryWords:
+				if wordInfo['word'].startswith(queryWord):
+					wordInfo['score'] = 1
+
+			#combine with preceeding word to form score so far
+			if len(words) > 0:
+				wordInfo['score'] += words[-1]['score']
+
+			words.append(wordInfo)
+
+			#are we now the bestest word?
+			if wordInfo['score'] > words[maxWordIndex]['score']:
+				maxWordIndex = len(words) - 1
+
+		#save the results
+		self.words = words
+		self.maxWordIndex = maxWordIndex
+
+	def findBestSnippet(self):
+		"""Build a snippet around the word with the best score"""
 		pass
 
 def mostRelevantSnippet(doc, query):
