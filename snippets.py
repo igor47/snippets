@@ -36,8 +36,12 @@ class Snipper(object):
 
 		return self.bestSnippet
 
-	def buildWordList(self):
-		"""Parses out the words in the document and puts them into a list"""
+	def buildWordScores(self):
+		"""Parses out the words in the document and scores them
+
+		The result is a list of dictionaries, one dictionary per word, containing the word's
+		'fullword', 'word', 'score' and 'clauseEnder' boolean"""
+
 		wordRe = re.compile(r"[^\s]+\s+")	#this is how we split out words
 		clauseIndicators = (',', ';')
 
