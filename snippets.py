@@ -133,7 +133,7 @@ class Snipper(object):
 		import words
 
 		suffixes = ['s', 'ing', 'est', 'ed', 'er']
-		queryWords = self.query.split():
+		queryWords = self.query.split()
 		baseWords = []
 		finalWords = []
 
@@ -141,7 +141,7 @@ class Snipper(object):
 			if queryWord in words.words:
 				for suffix in suffixes:
 					if queryWord.endswith(suffix):
-						baseWord = queryWord[0:queryWord.rfind(suffix)])
+						baseWord = queryWord[0:queryWord.rfind(suffix)]
 						if baseWord in words.words:
 							baseWords.append(baseWord)
 
