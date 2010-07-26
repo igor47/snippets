@@ -72,7 +72,7 @@ class Snipper(object):
 				wordInfo['score'] = max(wordInfo['score'] + words[-1]['score'], 0)
 
 			#we want to eliminate the influence of words which don't make it into this window
-			currentIndex = len(words) - 1
+			currentIndex = len(words)
 			lastOutOfWindow = currentIndex - self.snippetMaxWords
 			if lastOutOfWindow > 0:
 				wordInfo['score'] = max(wordInfo['score'] - words[lastOutOfWindow]['score'], 0)
@@ -81,8 +81,9 @@ class Snipper(object):
 
 			#are we now the bestest word?
 			if wordInfo['score'] > words[bestWordIndex]['score']:
+				lastBest = bestWordIndex
 				bestWordIndex = currentIndex
-				print "found new best word '%s' with index %s and score %s" % (wordInfo['word'], bestWordIndex, wordInfo['score'])
+				print "found new best word '%s' with index %s and score %s, beating last  best score %s" % (wordInfo['word'], bestWordIndex, wordInfo['score'], words[lastBest]['score'])
 
 		#save the results
 		self.words = words
