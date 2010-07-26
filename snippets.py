@@ -46,6 +46,9 @@ class Snipper(object):
 		bestWordIndex = 0
 
 		for word in wordRe.finditer(self.doc):
+			if bestWordIndex == 0:
+				print word.groups()
+
 			wordInfo = {
 					'fullword':word.group(0),
 					'word':word.group(1),
@@ -67,9 +70,11 @@ class Snipper(object):
 					wordInfo['score'] = self.snippetMaxWords
 
 			#combine with preceeding word to form score so far
+			#score never drops below 0
 			if len(words) > 0:
-				#score never drops below 0
 				wordInfo['score'] = max(wordInfo['score'] + words[-1]['score'], 0)
+			else:
+				wordInfo['score'] = 2		#give some weight to the first word
 
 			#we want to eliminate the influence of words which don't make it into this window
 			currentIndex = len(words)
