@@ -110,7 +110,7 @@ class Snipper(object):
 			if prevWord['clauseEnder']:
 				break
 
-		firstIndex = minFirstIndex + cutFromFront
+		firstIndex = minFirstIndex + cutFromFront + 1	#off by one fixer
 
 		#if we have space in our clause, we might could try to find the end of the clause
 		lastIndex = self.bestWordIndex + 1
