@@ -40,7 +40,7 @@ class Snipper(object):
 		'fullword', 'word', 'score' and 'clauseEnder' boolean"""
 
 		wordRe = re.compile(r"""([a-z0-9'`"]+)([^a-z0-9'`"]+)""", re.IGNORECASE)	#this is how we split out words
-		clauseIndicators = (',', ';')
+		clauseIndicators = ('.', ';')
 
 		words = []
 		bestWordIndex = 0
@@ -96,6 +96,7 @@ class Snipper(object):
 		#figure out where the snippet starts
 		if self.bestWordIndex > self.snippetMaxWords:
 			minFirstIndex = self.bestWordIndex - self.snippetMaxWords + 1
+			print "trying to figure out free space -- we start at minimum index %s" % minFirstIndex
 
 			#we might be able to  sacrifice some words from the front of the string
 			#To get a clause start at the front and back
@@ -108,13 +109,16 @@ class Snipper(object):
 				if prevWord['score'] < curWord['score']:
 					#we try to preceede a matching word by at least minPreceedingWords
 					cutFromFront = min(cutFromFront - self.minPreceedingWords, 0)
+					print "breaking cuz %s is better than %s" % (prevWord['word'], curWord['word'])
 					break
 
 				#if the prev word is a clause ender, we cut here
 				if prevWord['clauseEnder']:
+					print "breaking cuz %s is an ender" % prevWord['word']
 					break
 
 			firstIndex = minFirstIndex + cutFromFront + 1	#off by one fixer
+			print "our first index ends up being %s" % firstIndex
 		else:
 			firstIndex = 0		#we start at the beginning of the document
 			cutFromFront = self.snippetMaxWords - self.bestWordIndex
