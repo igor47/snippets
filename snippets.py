@@ -132,7 +132,7 @@ class Snipper(object):
 		but should be better than nothing"""
 		import words
 
-		suffixes = ['s', 'ing', 'est', 'ed', 'er']
+		suffixes = ['s', 'ing', 'est', 'ed', 'er', 'dom', 'like', 'ish', 'ly', 'ness', 'y', 'ism']
 		queryWords = self.query.split()
 		baseWords = []
 		finalWords = []
