@@ -133,12 +133,15 @@ class Snipper(object):
 			cutFromFront = self.snippetMaxWords - bestWordIndex
 
 		#if we have space in our clause, we might could try to find the end of the clause
-		lastIndex = bestWordIndex + 1
+		lastIndex = bestWordIndex
 		if cutFromFront > 0:
 			for addToEnd in xrange(1, cutFromFront):
-				curWord = words[bestWordIndex + addToEnd]
-				if curWord['clauseEnder']:
-					break
+				try:
+					curWord = words[bestWordIndex + addToEnd]
+					if curWord['clauseEnder']:
+						break
+				except IndexError:
+					addToEnd -= 1
 
 			lastIndex += addToEnd
 
