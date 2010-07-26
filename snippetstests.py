@@ -5,12 +5,14 @@ import unittest
 
 class TestHighlights(unittest.TestCase):
 	"""Tests the highlights class for to make sure it works"""
-	def setUp(self):
-		pass
-
 	def testSingle(self):
 		"""Make sure that snippets get highlighted"""
-		pass
+		testCases = (
+				{
+					'string'=>'The quick brown fox jumped over the lazy dog',
+					'search'=>'
+				
+		
 
 	def testConsecutive(self):
 		"""Consecutive highlighted words should be grouped in one highlight"""
