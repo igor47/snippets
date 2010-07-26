@@ -123,7 +123,7 @@ class Snipper(object):
 			lastIndex += addToEnd
 
 		#and now, for the grande finale
-		return "".join([word['fullword'] for word in self.words[firstIndex:lastIndex]])
+		return "".join([word['fullword'] for word in self.words[firstIndex:lastIndex]]).strip()
 
 	def buildQueryWordList(self):
 		"""Builds a list of matching words from the query string
