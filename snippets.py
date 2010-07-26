@@ -32,9 +32,7 @@ class Snipper(object):
 	def bestSnippet(self):
 		"""Returns the best snippet"""
 		self.buildWordScores()
-		self.findBestSnippet()
-
-		return self.bestSnippet
+		return self.findBestSnippet()
 
 	def buildWordScores(self):
 		"""Parses out the words in the document and scores them
@@ -117,7 +115,7 @@ class Snipper(object):
 			lastIndex += addToEnd
 
 		#and now, for the grande finale
-		self.bestSnippet = " ".join([word['word'] for word in self.words[firstIndex:lastIndex]])
+		return " ".join([word['word'] for word in self.words[firstIndex:lastIndex]])
 
 def highlightWords(doc, words):
 	"""Highlights words in a document
