@@ -117,7 +117,7 @@ class Snipper(object):
 			lastIndex += addToEnd
 
 		#and now, for the grande finale
-		self.bestSnippet = " ".join(self.words[firstIndex:lastIndex])
+		self.bestSnippet = " ".join([word['word'] for word in self.words[firstIndex:lastIndex]])
 
 def highlightWords(doc, words):
 	"""Highlights words in a document
