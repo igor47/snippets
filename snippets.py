@@ -50,8 +50,8 @@ class Snipper(object):
 
 		for word in wordRe.finditer(self.doc):
 			wordInfo = {
-					'fullword':word,
-					'word':word.strip(),
+					'fullword':word.group(),
+					'word':word.group().strip(),
 					'clauseEnder':False,
 					}
 
