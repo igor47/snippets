@@ -27,7 +27,6 @@ class Snipper(object):
 
 		self.words = []
 		self.bestWordIndex = None
-		self.bestSnippet = None
 
 	@property
 	def bestSnippet(self):
