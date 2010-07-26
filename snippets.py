@@ -108,7 +108,7 @@ class Snipper(object):
 				#score than the previous word, it's a matching word and cannot be cut
 				if prevWord['score'] < curWord['score']:
 					#we try to preceede a matching word by at least minPreceedingWords
-					cutFromFront = min(cutFromFront - self.minPreceedingWords, 0)
+					cutFromFront = max(cutFromFront - self.minPreceedingWords, 0)
 					print "breaking cuz %s is better than %s" % (prevWord['word'], curWord['word'])
 					break
 
