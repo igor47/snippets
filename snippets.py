@@ -46,9 +46,6 @@ class Snipper(object):
 		bestWordIndex = 0
 
 		for word in wordRe.finditer(self.doc):
-			if bestWordIndex == 0:
-				print word.groups()
-
 			wordInfo = {
 					'fullword':word.group(0),
 					'word':word.group(1),
@@ -97,29 +94,34 @@ class Snipper(object):
 	def findBestSnippet(self):
 		"""Build a snippet around the word with the best score"""
 		#figure out where the snippet starts
-		minFirstIndex = self.bestWordIndex - self.snippetMaxWords + 1
+		if self.bestWordIndex > self.snippetMaxWords:
+			minFirstIndex = self.bestWordIndex - self.snippetMaxWords + 1
 
-		#we sacrifice some words from the front of the string to get a sentence-oriented snippet
-		for cutFromFront in xrange(self.snippetMaxWords):
-			prevWord = self.words[minFirstIndex + cutFromFront - 1]
-			curWord = self.words[minFirstIndex + cutFromFront]
+			#we might be able to  sacrifice some words from the front of the string
+			#To get a clause start at the front and back
+			for cutFromFront in xrange(self.snippetMaxWords):
+				prevWord = self.words[minFirstIndex + cutFromFront - 1]
+				curWord = self.words[minFirstIndex + cutFromFront]
 
-			#normally, the score decays by one each word. If the next word has a bigger
-			#score than the previous word, it's a matching word and cannot be cut
-			if prevWord['score'] < curWord['score']:
-				#we try to preceede a matching word by at least minPreceedingWords
-				cutFromFront = min(cutFromFront - self.minPreceedingWords, 0)
-				break
+				#normally, the score decays by one each word. If the next word has a bigger
+				#score than the previous word, it's a matching word and cannot be cut
+				if prevWord['score'] < curWord['score']:
+					#we try to preceede a matching word by at least minPreceedingWords
+					cutFromFront = min(cutFromFront - self.minPreceedingWords, 0)
+					break
 
-			#if the prev word is a clause ender, we cut here
-			if prevWord['clauseEnder']:
-				break
+				#if the prev word is a clause ender, we cut here
+				if prevWord['clauseEnder']:
+					break
 
-		firstIndex = minFirstIndex + cutFromFront + 1	#off by one fixer
+			firstIndex = minFirstIndex + cutFromFront + 1	#off by one fixer
+		else:
+			firstIndex = 0		#we start at the beginning of the document
+			cutFromFront = self.snippetMaxWords - self.bestWordIndex
 
 		#if we have space in our clause, we might could try to find the end of the clause
 		lastIndex = self.bestWordIndex + 1
-		if cutFromFront == 0:
+		if cutFromFront > 0:
 			for addToEnd in xrange(1, cutFromFront):
 				curWord = self.words[self.bestWordIndex + addToEnd]
 				if curWord['clauseEnder']:
