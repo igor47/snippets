@@ -124,7 +124,7 @@ class Snipper(object):
 			lastIndex += addToEnd
 
 		#and now, for the grande finale
-		return " ".join([word['word'] for word in self.words[firstIndex:lastIndex]])
+		return "".join([word['fullword'] for word in self.words[firstIndex:lastIndex]])
 
 def highlightWords(doc, words):
 	"""Highlights words in a document
