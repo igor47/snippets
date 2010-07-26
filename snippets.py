@@ -23,14 +23,13 @@ class Snipper(object):
 		self.doc = doc
 		self.query = query
 
-		self.queryWords = self.query.split()
-
 		self.words = []
 		self.bestWordIndex = None
 
 	@property
 	def bestSnippet(self):
 		"""Returns the best snippet"""
+		self.buildQueryWordList()
 		self.buildWordScores()
 		return self.findBestSnippet()
 
@@ -62,7 +61,7 @@ class Snipper(object):
 			#determine the score for this word
 			wordInfo['score'] = -1	#non-matching words decay store by 1
 			for queryWord in self.queryWords:
-				if wordInfo['word'].startswith(queryWord):
+				if queryWord == wordInfo['word']:
 					#Matching words jump the score by the snippet size
 					#This allows us to keep track of density in the snippet
 					wordInfo['score'] = self.snippetMaxWords
@@ -125,6 +124,43 @@ class Snipper(object):
 
 		#and now, for the grande finale
 		return "".join([word['fullword'] for word in self.words[firstIndex:lastIndex]])
+
+	def buildQueryWordList(self):
+		"""Builds a list of matching words from the query string
+
+		we use a basic stemming algorithm which isn't very sophisicated
+		but should be better than nothing"""
+		import words
+
+		suffixes = ['s', 'ing', 'est', 'ed', 'er']
+		queryWords = self.query.split():
+		baseWords = []
+		finalWords = []
+
+		for queryWord in queryWords:
+			if queryWord in words.words:
+				for suffix in suffixes:
+					if queryWord.endswith(suffix):
+						baseWord = queryWord[0:queryWord.rfind(suffix)])
+						if baseWord in words.words:
+							baseWords.append(baseWord)
+
+			#always keep the query word	
+			finalWords.append(queryWord)
+
+		for baseWord in baseWords:
+			for suffix in suffixes:
+				finalWord = baseWord + suffix
+				if finalWord in words.words:
+					finalWords.append(finalWord)
+
+			#always keep the base word
+			finalWords.append(baseWord)
+
+
+		#we may have gotten dupes when we saved the queryWord AND a finalWord
+		finalWords = list(set(finalWords))
+		self.queryWords = finalWords
 
 def highlightWords(doc, words):
 	"""Highlights words in a document
