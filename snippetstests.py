@@ -32,6 +32,7 @@ class TestExtraction(unittest.testCase):
 	def testNoMatchReturnsBeginning(unittest.testCase):
 		"""Searching for words not in the document should return the beginning of the document"""
 		s = snippets.Snipper(self.commandline, 'asteroid cherry')
+		s.
 		snippet = s.bestSnippet
 		self.assertEqual(snippet[0:
 
