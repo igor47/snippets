@@ -4,17 +4,7 @@
 # Yelp Code Test 7/25/09
 
 """Does the yelp puzzle of snippet highlighting"""
-
-def highlightDoc(doc, query):
-	"""Highlights snippets in a document
-	Args:
-		doc -- document to be highlighted
-		query -- the search string
-
-	Returns:
-		The most relevant snippets from the document with the search terms highlighted."""
-
-	return ""
+import re
 
 class Snipper(object):
 	"""An object that extracts and highlights snippets in documents
@@ -92,22 +82,19 @@ class Snipper(object):
 
 	def findBestSnippet(self):
 		"""Build a snippet around the word with the best score"""
-		half = self.snippetMaxWords/2
-
 		#figure out where the snippet starts
-		minFirstIndex = self.bestWordIndex - self.snippetMaxWords
+		minFirstIndex = self.bestWordIndex - self.snippetMaxWords + 1
 
 		#we sacrifice some words from the front of the string to get a sentence-oriented snippet
-		sentenceFirst = None
-		for cutFromFront in xrange(half):
+		for cutFromFront in xrange(self.snippetMaxWords):
 			prevWord = self.words[minFirstIndex + cutFromFront - 1]
-			currentWord = self.words[minFirstIndex + cutFromFront]
+			curWord = self.words[minFirstIndex + cutFromFront]
 
 			#normally, the score decays by one each word. If the next word has a bigger
 			#score than the previous word, it's a matching word and cannot be cut
-			if prevWord['score'] < currentWord['score']:
+			if prevWord['score'] < curWord['score']:
 				#we try to preceede a matching word by at least minPreceedingWords
-				cutFromFront = min(cutFromFront - minPreceedingWords, 0)
+				cutFromFront = min(cutFromFront - self.minPreceedingWords, 0)
 				break
 
 			#if the prev word is a clause ender, we cut here
@@ -117,21 +104,38 @@ class Snipper(object):
 		firstIndex = minFirstIndex + cutFromFront
 
 		#if we have space in our clause, we might could try to find the end of the clause
+		lastIndex = self.bestWordIndex + 1
 		if cutFromFront == 0:
-			lastIndex = self.bestWordIndex
+			for addToEnd in xrange(1, cutFromFront):
+				curWord = self.words[self.bestWordIndex + addToEnd]
+				if curWord['clauseEnder']:
+					break
 
-def mostRelevantSnippet(doc, query):
-	"""Finds the most relevant snippet in a document
-	Args:
-		doc -- the document
-		query -- the string containing the query
+			lastIndex += addToEnd
 
-	returns:
-		the string with the most relevant snippet"""
-
-	return ""
+		#and now, for the grande finale
+		self.bestSnippet = " ".join(self.words[firstIndex:lastIndex])
 
 def highlightWords(doc, words):
-	"""Highlights words in a document"""
-	pass
+	"""Highlights words in a document
+	Args:
+		doc -- a string in which to highlight the words
+		words -- a string containing the words to highlight
+
+	returns
+		A string with the specified words highlighted"""
+
+	return doc
+
+def highlightDoc(doc, query):
+	"""Highlights snippets in a document
+	Args:
+		doc -- document to be highlighted
+		query -- the search string
+
+	Returns:
+		The most relevant snippets from the document with the search terms highlighted."""
+
+	snipper = Snipper(doc, query)
+	return highlightWords(snipper.bestSnippet, query)
 
