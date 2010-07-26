@@ -55,7 +55,7 @@ class Snipper(object):
 		containing the word, it's full expression, it's trail, score and
 		booleans for whether it is a clause ender or matches a query word"""
 
-		wordRe = re.compile(r"""([a-z0-9'`"]+)([^a-z0-9'`"]+)""", re.IGNORECASE)	#this is how we split out words
+		wordRe = re.compile(r"""([a-z0-9'`"]+)([^a-z0-9'`"]+|$)""", re.IGNORECASE)	#this is how we split out words
 		clauseIndicators = ('.', ';')
 
 		words = []
@@ -133,17 +133,18 @@ class Snipper(object):
 			cutFromFront = self.snippetMaxWords - bestWordIndex
 
 		#if we have space in our clause, we might could try to find the end of the clause
+		print "we have %s available. our best word is %s at %s" % (cutFromFront, words[bestWordIndex]['word'], bestWordIndex)
 		lastIndex = bestWordIndex
 		if cutFromFront > 0:
-			for addToEnd in xrange(1, cutFromFront):
-				try:
-					curWord = words[bestWordIndex + addToEnd]
+			try:
+				for addToEnd in xrange(0, cutFromFront):
+					curWord = words[lastIndex + addToEnd]
 					if curWord['clauseEnder']:
 						break
-				except IndexError:
-					addToEnd -= 1
+			except IndexError:
+				pass			#ran out of words
 
-			lastIndex += addToEnd
+			lastIndex = lastIndex + addToEnd
 
 		#and now, for the grande finale
 		return words[firstIndex:lastIndex]
