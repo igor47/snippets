@@ -76,7 +76,7 @@ class Snipper(object):
 			#are we now the bestest word?
 			if wordInfo['score'] > words[bestWordIndex]['score']:
 				bestWordIndex = len(words) - 1
-				print "found new best word %s with index %s" % (wordInfo['word'], bestWordIndex)
+				print "found new best word '%s' with index %s and score %s" % (wordInfo['word'], bestWordIndex, wordInfo['score'])
 
 		#save the results
 		self.words = words
