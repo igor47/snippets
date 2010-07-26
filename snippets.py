@@ -46,7 +46,7 @@ class Snipper(object):
 		clauseIndicators = (',', ';')
 
 		words = []
-		maxWordIndex = 0
+		bestWordIndex = 0
 
 		for word in wordRe.finditer(self.doc):
 			wordInfo = {
@@ -76,12 +76,12 @@ class Snipper(object):
 			words.append(wordInfo)
 
 			#are we now the bestest word?
-			if wordInfo['score'] > words[maxWordIndex]['score']:
-				maxWordIndex = len(words) - 1
+			if wordInfo['score'] > words[bestWordIndex]['score']:
+				bestWordIndex = len(words) - 1
 
 		#save the results
 		self.words = words
-		self.maxWordIndex = maxWordIndex
+		self.bestWordIndex = bestWordIndex
 
 	def findBestSnippet(self):
 		"""Build a snippet around the word with the best score"""
