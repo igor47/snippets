@@ -85,7 +85,6 @@ class Snipper(object):
 			if wordInfo['score'] > words[bestWordIndex]['score']:
 				lastBest = bestWordIndex
 				bestWordIndex = currentIndex
-				print "found new best word '%s' with index %s and score %s, beating last  best score %s" % (wordInfo['word'], bestWordIndex, wordInfo['score'], words[lastBest]['score'])
 
 		#save the results
 		self.words = words
@@ -96,7 +95,6 @@ class Snipper(object):
 		#figure out where the snippet starts
 		if self.bestWordIndex > self.snippetMaxWords:
 			minFirstIndex = self.bestWordIndex - self.snippetMaxWords + 1
-			print "trying to figure out free space -- we start at minimum index %s" % minFirstIndex
 
 			#we might be able to  sacrifice some words from the front of the string
 			#To get a clause start at the front and back
@@ -109,16 +107,13 @@ class Snipper(object):
 				if prevWord['score'] < curWord['score']:
 					#we try to preceede a matching word by at least minPreceedingWords
 					cutFromFront = max(cutFromFront - self.minPreceedingWords, 0)
-					print "breaking cuz %s is better than %s" % (prevWord['word'], curWord['word'])
 					break
 
 				#if the prev word is a clause ender, we cut here
 				if prevWord['clauseEnder']:
-					print "breaking cuz %s is an ender" % prevWord['word']
 					break
 
 			firstIndex = minFirstIndex + cutFromFront + 1	#off by one fixer
-			print "our first index ends up being %s" % firstIndex
 		else:
 			firstIndex = 0		#we start at the beginning of the document
 			cutFromFront = self.snippetMaxWords - self.bestWordIndex
