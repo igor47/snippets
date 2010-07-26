@@ -28,20 +28,22 @@ class Snipper(object):
 	@property
 	def bestSnippet(self):
 		"""Returns the best snippet"""
-		queryWords = self.buildQueryWordList(self.query)
-		documentWords, bestWordIndex = self.buildWordScores(self.document, queryWords)
-		bestSnippetWords = self.findBestSnippetWords(documentWords, bestWordIndex)
-
+		bestSnippetWords = self.getBestSnippetWords()
 		return "".join([word['fullword'] for word in bestSnippetWords]).strip()
 
 	@property
 	def bestSnippetHighlighted(self):
 		"""Returns the best snippet with the matches highlighted"""
-		queryWords = self.buildQueryWordList(self.query)
-		documentWords, bestWordIndex = self.buildWordScores(self.document, queryWords)
-		bestSnippetWords = self.findBestSnippetWords(documentWords, bestWordIndex)
-
+		bestSnippetWords = self.getBestSnippetWords()
 		return self.highlightSnippet(bestSnippetWords)
+
+	def getBestSnippetWords(self):
+		"""Returns the word list of the words in the best snippet"""
+		queryWords = self.buildQueryWordList(self.query)
+		documentWords, bestWordIndex = self.buildWordScores(self.doc, queryWords)
+		bestSnippetWords = self.findBestSnippet(documentWords, bestWordIndex)
+
+		return bestSnippetWords
 
 	def buildWordScores(self, document, queryWords):
 		"""Parses out the words in the document and scores them
@@ -102,7 +104,7 @@ class Snipper(object):
 		#and vioala!
 		return words, bestWordIndex
 
-	def findBestSnippetWords(self, words, bestWordIndex):
+	def findBestSnippet(self, words, bestWordIndex):
 		"""Build a snippet around the word with the best score"""
 		#figure out where the snippet starts
 		if bestWordIndex > self.snippetMaxWords:
