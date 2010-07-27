@@ -173,9 +173,10 @@ class Snipper(object):
 		lastIndex = bestWordIndex
 		if cutFromFront > 0:
 			try:
-				for addToEnd in xrange(1, cutFromFront + 1):
+				for addToEnd in xrange(1, cutFromFront):
 					curWord = words[lastIndex + addToEnd]
 					if curWord['clauseEnder']:
+						addToEnd += 1	#make sure to enclude the last word
 						break
 			except IndexError:
 				pass			#ran out of words
