@@ -71,7 +71,7 @@ class Snipper(object):
 			queryWords -- a list of words which are scored highly
 
 		The result is a list of dictionaries, one dictionary per word,
-		containing the word, it's full expression, it's trail, score and
+		containing the word, it's full expression, it's tail, score and
 		booleans for whether it is a clause ender or matches a query word"""
 
 		wordRe = re.compile(r"""([a-z0-9'`"]+)([^a-z0-9'`"]+|$)""", re.IGNORECASE)	#this is how we split out words
@@ -84,7 +84,8 @@ class Snipper(object):
 			wordInfo = {
 					'fullword':word.group(0),
 					'word':word.group(1).lower(),
-					'trail':word.group(2),
+					'originalWord':word.group(1),
+					'tail':word.group(2),
 					'matching':False,
 					'score':-1,		#non-matching words decay score by 1
 					'clauseEnder':False,
@@ -92,7 +93,7 @@ class Snipper(object):
 
 			#determine if this ends a clause -- useful for building the snippet
 			for indicator in clauseIndicators:
-				if wordInfo['trail'].startswith(indicator):
+				if wordInfo['tail'].startswith(indicator):
 					wordInfo['clauseEnder'] = True
 
 			#determine the score for this word
@@ -239,7 +240,7 @@ class Snipper(object):
 				highlightedSnippet += "[[HIGHLIGHT]]"
 				alreadyHighlighting = True
 
-			highlightedSnippet += snippetWord['word']
+			highlightedSnippet += snippetWord['originalWord']
 
 			if alreadyHighlighting:
 				try:
@@ -251,7 +252,7 @@ class Snipper(object):
 					highlightedSnippet += "[[ENDHIGHLIGHT]]"
 					alreadyHighlighting = False
 
-			highlightedSnippet += snippetWord['trail']
+			highlightedSnippet += snippetWord['tail']
 
 		return highlightedSnippet.strip()
 
@@ -265,4 +266,4 @@ def highlightDoc(doc, query):
 		The most relevant snippets from the document with the search terms highlighted."""
 
 	snipper = Snipper(doc, query)
-	return snipper.bestSnippetHighlighted()
+	return snipper.bestSnippetHighlighted
