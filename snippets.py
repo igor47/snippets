@@ -83,7 +83,7 @@ class Snipper(object):
 		for word in wordRe.finditer(document):
 			wordInfo = {
 					'fullword':word.group(0),
-					'word':word.group(1),
+					'word':word.group(1).lower(),
 					'trail':word.group(2),
 					'matching':False,
 					'score':-1,		#non-matching words decay score by 1
@@ -106,7 +106,7 @@ class Snipper(object):
 			if len(words) > 0:
 				wordInfo['score'] = max(wordInfo['score'] + words[-1]['score'], 0)
 			else:
-				wordInfo['score'] = 1		#give some weight to the start of document
+				wordInfo['score'] = 0
 
 			#we want to eliminate the influence of words which don't even make it into this window
 			currentIndex = len(words)
@@ -220,7 +220,7 @@ class Snipper(object):
 			finalWords.append(baseWord)
 
 		#we may have gotten dupes when we saved the queryWord AND a finalWord
-		finalWords = list(set(finalWords))
+		finalWords = [word.lower() for word in set(finalWords)]
 		return finalWords
 
 	def highlightSnippet(self, snippetWords):
