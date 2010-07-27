@@ -14,16 +14,35 @@ class Snipper(object):
 	This assumes that documents will be real english prose text -- it will not do well with
 	extensive math or strange characters"""
 
-	snippetMaxWords = 60		#at most this many words
-	snippetMinWords = 30		#at least this many words
-	minPreceedingWords = 5	#first match must have at least this many words ahead 
-	                      	#of it, but not more than snippetMaxWords
-
-	def __init__(self, doc, query):
+	def __init__(self, doc, query, maxWords = 60, minPreceedingWords = 5):
 		self.doc = doc
 		self.query = query
 
-		self.bestWordIndex = None
+		self._maxWords = maxWords
+		self._minPreceedingWords = minPreceedingWords
+
+	@property
+	def maxWords(self):
+		"""At most this many words in the snippet"""
+		return self._maxWords
+
+	@maxWords.setter
+	def maxWords(self, value):
+		"""We need at least 1 word in the snippet"""
+		if value < 1:
+			raise ValueError("Need at least 1 word in the snippet")
+		self._maxWords = value
+
+	@property
+	def minPreceedingWords(self):
+		"""At least this many words before the first match"""
+		return self._minPreceedingWords
+
+	@minPreceedingWords.setter
+	def minPreceedingWords(self, value):
+		if value < 0:
+			raise ValueError("Cannot have negative preceeding words")
+		return self._minPreceedingWords
 
 	@property
 	def bestSnippet(self):
@@ -81,7 +100,7 @@ class Snipper(object):
 				if queryWord == wordInfo['word']:
 					wordInfo['matching'] = True
 					#matching words jump score by the snippet size
-					wordInfo['score'] = self.snippetMaxWords
+					wordInfo['score'] = self.maxWords
 
 			#combine with preceeding word to form score so far
 			if len(words) > 0:
@@ -91,7 +110,7 @@ class Snipper(object):
 
 			#we want to eliminate the influence of words which don't even make it into this window
 			currentIndex = len(words)
-			lastOutOfWindow = currentIndex - self.snippetMaxWords
+			lastOutOfWindow = currentIndex - self.maxWords
 			if lastOutOfWindow >= 0:
 				wordInfo['score'] = max(wordInfo['score'] - words[lastOutOfWindow]['score'], 0)
 
@@ -106,38 +125,54 @@ class Snipper(object):
 
 	def findBestSnippet(self, words, bestWordIndex):
 		"""Build a snippet around the word with the best score"""
+		#we always add one to bestWordIndex because we want this item to make it into the slicing
+		bestWordIndex += 1
 		#figure out where the snippet starts
-		if bestWordIndex > self.snippetMaxWords:
-			minFirstIndex = bestWordIndex - self.snippetMaxWords + 1
+		if bestWordIndex  > self.maxWords:
+			minFirstIndex = bestWordIndex - self.maxWords
 
 			#we might be able to  sacrifice some words from the front of the string
-			#To get a clause start at the front and back
-			for cutFromFront in xrange(self.snippetMaxWords):
+			#to get a clause start at the front of the snippet
+			for cutFromFront in xrange(self.maxWords):
 				prevWord = words[minFirstIndex + cutFromFront - 1]
 				curWord = words[minFirstIndex + cutFromFront]
 
 				#normally, the score decays by one each word. If the next word has a bigger
 				#score than the previous word, it's a matching word and cannot be cut
 				if prevWord['score'] < curWord['score']:
-					#we try to preceede a matching word by at least minPreceedingWords
-					cutFromFront = max(cutFromFront - self.minPreceedingWords, 0)
 					break
 
 				#if the prev word is a clause ender, we cut here
 				if prevWord['clauseEnder']:
 					break
 
-			firstIndex = minFirstIndex + cutFromFront + 1	#off by one fixer
+			firstIndex = minFirstIndex + cutFromFront
+
+			#if we didn't find the beginning of the clause, we want to give a bit of a buffer
+			#to the best word. Try to give at least minPreceedingWords unless that puts the
+			#snippet over maxWords
+			if not prevWord['clauseEnder']:
+				preceedingWords = bestWordIndex - firstIndex
+				if cutFromFront > 0 and preceedingWords < self.minPreceedingWords:
+					neededWords = self.minPreceedingWords - preceedingWords
+
+					if neededWords > cutFromFront:
+						#we need more words than we've cut -- just undo the cutting
+						firstIndex -= cutFromFront
+						cutFromFront = 0
+					else:
+						#we cut more words that we need -- undo some of the cutting
+						firstIndex -= neededWords
+						cutFromFront -= neededWords
 		else:
 			firstIndex = 0		#we start at the beginning of the document
-			cutFromFront = self.snippetMaxWords - bestWordIndex
+			cutFromFront = self.maxWords - bestWordIndex
 
-		#if we have space in our clause, we might could try to find the end of the clause
-		print "we have %s available. our best word is %s at %s" % (cutFromFront, words[bestWordIndex]['word'], bestWordIndex)
+		#if we have space in our snippet, we might could try to find the end of the clause
 		lastIndex = bestWordIndex
 		if cutFromFront > 0:
 			try:
-				for addToEnd in xrange(0, cutFromFront):
+				for addToEnd in xrange(1, cutFromFront + 1):
 					curWord = words[lastIndex + addToEnd]
 					if curWord['clauseEnder']:
 						break
