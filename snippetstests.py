@@ -9,15 +9,47 @@ import snippets
 class TestHighlights(unittest.TestCase):
 	"""Tests the highlights class for to make sure it works"""
 	def testSingle(self):
-		"""Make sure that snippets get highlighted"""
-		testCases = (
-				{'string':'The quick brown fox jumped over the lazy dog',
-					'search':'brown fox'},)
-		pass
+		"""Make sure that words get highlighted"""
+		doc = "The quick brown fox jumped over a lazy dog."
+
+		s = snippets.Snipper(doc, 'the', maxWords = 200)
+		self.assertEqual(
+				s.bestSnippetHighlighted,
+				"[[HIGHLIGHT]]The[[ENDHIGHLIGHT]] quick brown fox jumped over a lazy dog.")
+
+		s = snippets.Snipper(doc, 'fox', maxWords = 200)
+		self.assertEqual(
+				s.bestSnippetHighlighted,
+				"The quick brown [[HIGHLIGHT]]fox[[ENDHIGHLIGHT]] jumped over a lazy dog.")
+
+		s = snippets.Snipper(doc, 'dog', maxWords = 200)
+		self.assertEqual(
+				s.bestSnippetHighlighted,
+				"The quick brown fox jumped over a lazy [[HIGHLIGHT]]dog[[ENDHIGHLIGHT]].")
 
 	def testConsecutive(self):
 		"""Consecutive highlighted words should be grouped in one highlight"""
-		pass
+		doc = "The quick brown fox jumped over a lazy dog."
+
+		s = snippets.Snipper(doc, 'brown fox', maxWords = 200)
+		self.assertEqual(
+				s.bestSnippetHighlighted,
+				"The quick [[HIGHLIGHT]]brown fox[[ENDHIGHLIGHT]] jumped over a lazy dog.")
+
+		s = snippets.Snipper(doc, 'dog brown fox lazy', maxWords = 200)
+		self.assertEqual(
+				s.bestSnippetHighlighted,
+				"The quick [[HIGHLIGHT]]brown fox[[ENDHIGHLIGHT]] jumped over a [[HIGHLIGHT]]lazy dog[[ENDHIGHLIGHT]].")
+
+		s = snippets.Snipper(doc, 'the quick brown fox over a lazy dog', maxWords = 200)
+		self.assertEqual(
+				s.bestSnippetHighlighted,
+				"[[HIGHLIGHT]]The quick brown fox[[ENDHIGHLIGHT]] jumped [[HIGHLIGHT]]over a lazy dog[[ENDHIGHLIGHT]].")
+
+		s = snippets.Snipper(doc, 'the quick brown fox jumped over a lazy dog', maxWords = 200)
+		self.assertEqual(
+				s.bestSnippetHighlighted,
+				"[[HIGHLIGHT]]The quick brown fox jumped over a lazy dog[[ENDHIGHLIGHT]].")
 
 	def testNoMatches(self):
 		"""Nothing should be highlighted if the document has no matching groups"""
@@ -25,33 +57,62 @@ class TestHighlights(unittest.TestCase):
 
 class TestExtraction(unittest.TestCase):
 	"""Tests the ability to exract minimally relevant snippets"""
-	@classmethod
-	def setUpClass(cls):
-		cls.commandline = open('commandline.txt').read()
-
-	def testNoMatchReturnsBeginning(self):
-		"""Searching for words not in the document should return the beginning of the document"""
-		s = snippets.Snipper(self.commandline, 'asteroid cherry')
-		s.snippetMaxWords = 10
-		snippet = s.bestSnippet
-		self.assertEqual(snippet, 'In the Beginning was the Command Line\r\n\r\nby Neal Stephenson')
-
-	def testBasicRelevance(self):
-		"""Snippets should be more relevant than non-snippets"""
-		doc = "This is an irrelevant sentence. This is a filler sentence. This is a relevant sentence.";
-		s = snippets.Snipper(doc, 'relevant')
-		s.snippetMaxWords = 5
-		self.assertEqual(s.bestSnippet, "This is a relevant sentence.")
+	def testSizeOneSnippetsWithMatch(self):
+		"""Size one snippets should just return the match"""
+		doc = 'in the beginning was the command line'
+		for searchString in ('in', 'was', 'line'):
+			s = snippets.Snipper(doc, searchString, maxWords = 1)
+			self.assertEqual(s.bestSnippet, searchString)
 
 	def testSnippetSize(self):
 		"""Snippets should be of a certain size and not any longer"""
-		testSearches = ('car wind', 'emacs', 'dolphins', 'control freak', 'making your own')
-		for search in testSearches:
-			s = snippets.Snipper(self.commandline, search)
-			maxSize = random.randRange(20, 150)
+		commandline = open('command.txt').read()
+		searchStrings = ('car wind', 'asteroid cherry', 'control freak', 'making your own')
 
-			s.snippetMaxWords = maxSize
-			self.assertLessEqual(len(s.bestSnippet), maxsize, 'Snippet too large when searching for %s with maxSize %d' % (search, maxSize))
+		#build a list of sizes to test
+		maxSizes = [2, 3, 10, 100, 1000]
+
+		for search in searchStrings:
+			for size in maxSizes:
+				s = snippets.Snipper(commandline, search, maxWords = size)
+				self.assertTrue(len(s.getBestSnippetWords()) <= size)
+
+	def testNoMatchReturnsBeginning(self):
+		"""Searching for words not in the document should return the beginning of the document"""
+		s = snippets.Snipper("There are no such words here", 'asteroid cherry')
+
+		s.maxWords = 1
+		self.assertEqual(s.bestSnippet, "There")
+
+		s.maxWords = 2
+		self.assertEqual(s.bestSnippet, "There are")
+
+		s.maxWords = 3
+		self.assertEqual(s.bestSnippet, "There are no")
+
+		s.maxWords = 50
+		self.assertEqual(s.bestSnippet, "There are no such words here")
+
+	def testSentenceRounding(self):
+		"""We should round to the nearest clause both ahead and in front"""
+		doc = "This is an irrelevant sentence. This is a filler sentence. This is a relevant sentence.";
+
+		s = snippets.Snipper(doc, 'relevant', maxWords = 6)
+		self.assertEqual(s.bestSnippet, "This is a relevant sentence.")
+
+		s = snippets.Snipper(doc, 'relevant', maxWords = 4)
+		self.assertEqual(s.bestSnippet, "This is a relevant")
+
+		s = snippets.Snipper(doc, 'relevant', maxWords = 3)
+		self.assertEqual(s.bestSnippet, "is a relevant")
+
+		#ideally, the last test would result in 'a relevant sentence.'
+		#it does not because we cut all the words before 'relevant' but then we can't
+		#append all those words to the end because we run out of document. to add the
+		#'a' back in, we'd have to see how much of the cut space we used and then re-add
+		#the leftovers back to the beginning
+		s = snippets.Snipper(doc, 'relevant', maxWords = 3, minPreceedingWords = 0)
+		self.assertEqual(s.bestSnippet, "relevant sentence.")
 
 def suite():
 	extractionSuite = unittest.defaultTestLoader.loadTestsFromTestCase(TestExtraction)
@@ -62,4 +123,4 @@ def suite():
 
 if __name__ == "__main__":
 	allTests = suite()
-	unittest.TextTestRunner(verbosity=2).run(allTests)
+	unittest.TextTestRunner(verbosity=0).run(allTests)
