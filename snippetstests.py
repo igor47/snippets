@@ -53,7 +53,10 @@ class TestHighlights(unittest.TestCase):
 
 	def testNoMatches(self):
 		"""Nothing should be highlighted if the document has no matching groups"""
-		pass
+		doc = "This document does not include the names of any mammals"
+
+		s = snippets.Snipper(doc, 'man bear pig', maxWords = 200)
+		self.assertTrue("HIGHLIGHT" not in s.bestSnippetHighlighted)
 
 class TestExtraction(unittest.TestCase):
 	"""Tests the ability to exract minimally relevant snippets"""
